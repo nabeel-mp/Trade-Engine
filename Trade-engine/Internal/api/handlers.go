@@ -47,9 +47,9 @@ func placeOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "order published"})
 }
 func getOrderBook(c *gin.Context) {
-	val, err := rdb.Get(redis.Ctx, "orderbook_snapshot").Result()
+	val, err := rdb.Get(redis.Ctx, "orderbook").Result()
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Orderbook snapshot not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Orderbook not found"})
 		return
 	}
 	var snapshot interface{}
@@ -59,7 +59,7 @@ func getOrderBook(c *gin.Context) {
 
 // getTrades retrieves the last 100 executed trades
 func getTrades(c *gin.Context) {
-	trades, err := rdb.LRange(redis.Ctx, "trades_history", 0, 99).Result()
+	trades, err := rdb.LRange(redis.Ctx, "trades", 0, 99).Result()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch trades"})
 		return

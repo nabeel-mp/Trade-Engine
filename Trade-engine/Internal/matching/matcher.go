@@ -2,7 +2,6 @@ package matching
 
 import (
 	"container/list"
-	"sort"
 	"time"
 )
 
@@ -19,39 +18,42 @@ func (ob *OrderBook) Match(order *Order) []Trade {
 
 	trades := []Trade{}
 
+	// Use pre-sorted slices
+	var prices *[]float64
+	var book map[float64]*list.List
+
 	if order.Side == Buy {
-		// Sort prices ascending to match lowest Asks first
-		var prices []float64
-		for p := range ob.Asks {
-			prices = append(prices, p)
-		}
-		sort.Float64s(prices)
-
-		for _, price := range prices {
-			if order.Quantity <= 0 || (order.Type == Limit && price > order.Price) {
-				break
-			}
-			processLevel(ob.Asks[price], order, &trades, price, Buy)
-			if ob.Asks[price].Len() == 0 {
-				delete(ob.Asks, price)
-			}
-		}
+		prices = &ob.AskPrices
+		book = ob.Asks
 	} else {
-		// Sort prices descending to match highest Bids first
-		var prices []float64
-		for p := range ob.Bids {
-			prices = append(prices, p)
-		}
-		sort.Slice(prices, func(i, j int) bool { return prices[i] > prices[j] })
+		prices = &ob.BidPrices
+		book = ob.Bids
+	}
 
-		for _, price := range prices {
-			if order.Quantity <= 0 || (order.Type == Limit && price < order.Price) {
+	for i := 0; i < len(*prices); {
+		price := (*prices)[i]
+
+		// Stop if limit price is hit (Market orders ignore this)
+		if order.Type == Limit {
+			if order.Side == Buy && price > order.Price {
 				break
 			}
-			processLevel(ob.Bids[price], order, &trades, price, Sell)
-			if ob.Bids[price].Len() == 0 {
-				delete(ob.Bids, price)
+			if order.Side == Sell && price < order.Price {
+				break
 			}
+		}
+
+		processLevel(book[price], order, &trades, price, order.Side)
+
+		if book[price].Len() == 0 {
+			delete(book, price)
+			*prices = append((*prices)[:i], (*prices)[i+1:]...) // Remove price
+		} else {
+			i++
+		}
+
+		if order.Quantity <= 0 {
+			break
 		}
 	}
 
