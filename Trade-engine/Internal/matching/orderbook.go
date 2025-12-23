@@ -2,6 +2,7 @@ package matching
 
 import (
 	"container/list"
+	"encoding/json"
 	"sort"
 	"sync"
 )
@@ -21,6 +22,30 @@ func NewOrderBook() *OrderBook {
 		BidPrices: []float64{},
 		AskPrices: []float64{},
 	}
+}
+
+func (ob *OrderBook) MarshalJSON() ([]byte, error) {
+	type Alias struct {
+		Bids map[float64][]*Order `json:"bids"`
+		Asks map[float64][]*Order `json:"asks"`
+	}
+
+	out := Alias{
+		Bids: make(map[float64][]*Order),
+		Asks: make(map[float64][]*Order),
+	}
+
+	for price, list := range ob.Bids {
+		for e := list.Front(); e != nil; e = e.Next() {
+			out.Bids[price] = append(out.Bids[price], e.Value.(*Order))
+		}
+	}
+	for price, list := range ob.Asks {
+		for e := list.Front(); e != nil; e = e.Next() {
+			out.Asks[price] = append(out.Asks[price], e.Value.(*Order))
+		}
+	}
+	return json.Marshal(out)
 }
 
 func (ob *OrderBook) addWithoutLock(order *Order) {
