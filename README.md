@@ -5,9 +5,14 @@ Kafka event streaming
 Redis caching
 OHLCV candles (1s, 1m)
 Handles 200k orders/sec
-Run: docker-compose up go run cmd/engine/main.go go run cmd/candle/main.go go run cmd/api/main.go
+Run: 
+docker-compose up 
+go run cmd/engine/main.go
+go run cmd/candle/main.go 
+go run cmd/api/main.go
 
 References
+
 Apache Kafka Documentation – Consumer groups, offsets, blocking consumption
 segmentio/kafka-go – High-performance Go Kafka client
 Redis Documentation – In-memory caching and fast read access
