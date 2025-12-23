@@ -28,9 +28,11 @@ func main() {
 		fmt.Printf("🧾 Parsed Order: %+v\n", order)
 
 		trades := ob.Match(&order)
+		matching.SaveOrderBook(ob)
 		fmt.Println("🔍 Trades found:", len(trades))
 
 		for _, t := range trades {
+			matching.SaveTrade(t)
 			data, _ := json.Marshal(t)
 			_ = producer.Publish(data)
 			fmt.Println("✅ Trade executed:", t)

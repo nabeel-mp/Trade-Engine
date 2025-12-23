@@ -3,6 +3,7 @@ package api
 import (
 	"Trade-engine/Internal/kafka"
 	"Trade-engine/Internal/matching"
+	"Trade-engine/Internal/redis"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -11,6 +12,7 @@ import (
 )
 
 var producer = kafka.NewProducer("localhost:9092", "orders")
+var rdb = redis.New()
 
 func Register(r *gin.Engine) {
 	r.POST("/order", placeOrder)
@@ -43,4 +45,48 @@ func placeOrder(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "order published"})
+}
+func getOrderBook(c *gin.Context) {
+	val, err := rdb.Get(redis.Ctx, "orderbook_snapshot").Result()
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Orderbook snapshot not found"})
+		return
+	}
+	var snapshot interface{}
+	json.Unmarshal([]byte(val), &snapshot)
+	c.JSON(http.StatusOK, snapshot)
+}
+
+// getTrades retrieves the last 100 executed trades
+func getTrades(c *gin.Context) {
+	trades, err := rdb.LRange(redis.Ctx, "trades_history", 0, 99).Result()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch trades"})
+		return
+	}
+
+	var result []interface{}
+	for _, t := range trades {
+		var mapped interface{}
+		json.Unmarshal([]byte(t), &mapped)
+		result = append(result, mapped)
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+// getCandles retrieves the stored 1s OHLCV candles
+func getCandles(c *gin.Context) {
+	candles, err := rdb.LRange(redis.Ctx, "candles_1s", 0, -1).Result()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch candles"})
+		return
+	}
+
+	var result []interface{}
+	for _, cand := range candles {
+		var mapped interface{}
+		json.Unmarshal([]byte(cand), &mapped)
+		result = append(result, mapped)
+	}
+	c.JSON(http.StatusOK, result)
 }

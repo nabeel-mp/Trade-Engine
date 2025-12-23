@@ -19,8 +19,8 @@ func NewProducer(broker, topic string) *Producer {
 	}
 }
 
-func (p *Producer) Publish(msg []byte) error {
+func (p *Producer) Publish(data []byte) error {
 	return p.writer.WriteMessages(context.Background(),
-		kafka.Message{Value: msg},
+		kafka.Message{Value: data},
 	)
 }
