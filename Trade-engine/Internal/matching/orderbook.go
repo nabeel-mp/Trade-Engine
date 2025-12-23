@@ -3,6 +3,7 @@ package matching
 import (
 	"container/list"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"sync"
 )
@@ -26,21 +27,23 @@ func NewOrderBook() *OrderBook {
 
 func (ob *OrderBook) MarshalJSON() ([]byte, error) {
 	type Alias struct {
-		Bids map[float64][]*Order `json:"bids"`
-		Asks map[float64][]*Order `json:"asks"`
+		Bids map[string][]*Order `json:"bids"`
+		Asks map[string][]*Order `json:"asks"`
 	}
 
 	out := Alias{
-		Bids: make(map[float64][]*Order),
-		Asks: make(map[float64][]*Order),
+		Bids: make(map[string][]*Order),
+		Asks: make(map[string][]*Order),
 	}
 
 	for price, list := range ob.Bids {
+		price := fmt.Sprintf("%.2f", price)
 		for e := list.Front(); e != nil; e = e.Next() {
 			out.Bids[price] = append(out.Bids[price], e.Value.(*Order))
 		}
 	}
 	for price, list := range ob.Asks {
+		price := fmt.Sprintf("%.2f", price)
 		for e := list.Front(); e != nil; e = e.Next() {
 			out.Asks[price] = append(out.Asks[price], e.Value.(*Order))
 		}

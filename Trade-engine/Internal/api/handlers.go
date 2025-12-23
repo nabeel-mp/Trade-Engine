@@ -48,12 +48,15 @@ func placeOrder(c *gin.Context) {
 }
 func getOrderBook(c *gin.Context) {
 	val, err := rdb.Get(redis.Ctx, "orderbook").Result()
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Orderbook not found"})
+	if err != nil || val == "" {
+		c.JSON(http.StatusOK, gin.H{"bids": gin.H{}, "asks": gin.H{}})
 		return
 	}
-	var snapshot interface{}
-	json.Unmarshal([]byte(val), &snapshot)
+	var snapshot map[string]interface{}
+	if err := json.Unmarshal([]byte(val), &snapshot); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse data"})
+		return
+	}
 	c.JSON(http.StatusOK, snapshot)
 }
 
